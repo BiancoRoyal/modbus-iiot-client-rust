@@ -1,19 +1,28 @@
 
 extern crate modbus_iiot;
 
-use modbus_iiot::tcp::master::*;
-use modbus_iiot::core::ethernet::EthernetMaster;
+use modbus_iiot::tcp::master::TcpClient;
+use modbus_iiot::tcp::masteraccess::{MasterAccess, CoilValue};
 
 fn main()
 {
-    println!("Hello, Modbus world!");
-    let mut client = TcpClient::new("192.168.1.74");
-    client.connect();
-    reading_coils(&mut client);
-    reading_holding_registers(&mut client);
-    reading_input_registers(&mut client);
-    reading_discrete_inputs(&mut client);
-    client.disconnect();
+    let mut client = TcpClient::new("[::1]:10502");
+    let result = client.connect();
+    match result {
+        Err(message) => println!("Ups, No Modbus world! {}", message),
+        Ok(_) => {
+            println!("Hello, Modbus world!");
+            reading_coils(&mut client);
+            reading_holding_registers(&mut client);
+            reading_input_registers(&mut client);
+            reading_discrete_inputs(&mut client);
+
+            write_coils(&mut client);
+            write_registers(&mut client);
+
+            client.disconnect();
+        }
+    }
 }
 
 fn reading_coils(client: &mut TcpClient) {
@@ -50,4 +59,24 @@ fn reading_discrete_inputs(client: &mut TcpClient) {
 
     let response = client.read_discrete_inputs(0, 10);
     println!("Response DI: {:?}", response);   
+}
+
+// =========================================================================
+
+fn write_coils(client: &mut TcpClient) {
+    
+    let response = client.write_single_coil(1, CoilValue::On);
+    println!("Response WSCO: {:?}", response);   
+
+    let response = client.write_multiple_coils(0, vec!(CoilValue::On, CoilValue::Off, CoilValue::On));
+    println!("Response WMCO: {:?}", response);   
+}
+
+fn write_registers(client: &mut TcpClient) {
+    
+    let response = client.write_single_register(1, 65000);
+    println!("Response WSRE: {:?}", response);   
+
+    let response = client.write_multiple_registers(0, vec!(23456, 77, 65534, 0));
+    println!("Response WMRE: {:?}", response);   
 }
